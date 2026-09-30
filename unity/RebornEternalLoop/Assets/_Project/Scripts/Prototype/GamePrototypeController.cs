@@ -16,7 +16,7 @@ namespace RebornEternalLoop
         private Transform player;
         private Transform enemy;
         private int health, level = 1, xp, enemyHp, loops, coins;
-        private float nextAttack;
+        private float nextAttack, nextEnemyAttack;
         private Vector3 spawnPoint;
         private string notice = "Use the movement pad, ATTACK and REWIND.";
         private Vector2 mobileMove;
@@ -50,6 +50,12 @@ namespace RebornEternalLoop
             if ((Input.GetKeyDown(KeyCode.Space) || attackPressed) && Time.time >= nextAttack) Attack();
             if (Input.GetKeyDown(KeyCode.R) || rewindPressed) Rewind();
             attackPressed = false; rewindPressed = false;
+            if (Vector3.Distance(player.position, enemy.position) < 1.7f && Time.time >= nextEnemyAttack)
+            {
+                nextEnemyAttack = Time.time + 1.5f;
+                health = Mathf.Max(0, health - (5 + loops));
+                notice = "The Wraith hits you!";
+            }
             if (health <= 0) Rewind();
         }
 
