@@ -127,6 +127,7 @@ func _build_ui() -> void:
 	_add_button(root, "Choose Demon Lord destiny", _choose_demon_destiny)
 	_add_button(root, "Choose Horse Guardian destiny", _choose_horse_destiny)
 	_add_section(root, "DEMON THREATS & TOURNAMENTS")
+	_add_button(root, "Animated battle demo • Move, talk & fight", _open_battle_demo)
 	_add_button(root, "Fight a weak demon • Level 1+", _weak_demon)
 	_add_button(root, "Challenge Demon Lord Varkesh • Level 30+", _demon_lord)
 	_add_button(root, "Enter the arena tournament", _tournament)
@@ -578,3 +579,128 @@ func _reset_game() -> void:
 	_save_game()
 	_refresh()
 	_update_music()
+
+
+# Separate animated battle prototype; existing game content is untouched.
+var battle_overlay: Control
+var battle_asma: Label
+var battle_demon: Label
+var battle_dialogue: Label
+var battle_enemy_hp := 100
+var battle_turn := 0
+
+func _open_battle_demo() -> void:
+\tif battle_overlay != null and is_instance_valid(battle_overlay):
+\t\tbattle_overlay.queue_free()
+\tbattle_enemy_hp = 100
+\tbattle_turn = 0
+\tbattle_overlay = Control.new()
+\tbattle_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+\tbattle_overlay.z_index = 20
+\tadd_child(battle_overlay)
+\tvar shade := ColorRect.new()
+\tshade.color = Color(0.025, 0.035, 0.07, 0.97)
+\tshade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+\tbattle_overlay.add_child(shade)
+\tvar panel := PanelContainer.new()
+\tpanel.set_anchors_preset(Control.PRESET_CENTER)
+\tpanel.position = Vector2(-360, -250)
+\tpanel.size = Vector2(720, 500)
+\t_style_panel(panel, Color("#17283b"))
+\tbattle_overlay.add_child(panel)
+\tvar col := VBoxContainer.new()
+\tcol.add_theme_constant_override("separation", 14)
+\tpanel.add_child(col)
+\tvar heading := Label.new()
+\theading.text = "BATTLE • WHISPERING FOREST"
+\theading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+\theading.add_theme_font_size_override("font_size", 20)
+\theading.add_theme_color_override("font_color", Color("#f1d58b"))
+\tcol.add_child(heading)
+\tvar stage := Control.new()
+\tstage.custom_minimum_size = Vector2(680, 210)
+\tcol.add_child(stage)
+\tvar ground := ColorRect.new()
+\tground.color = Color("#263d3d")
+\tground.position = Vector2(0, 160)
+\tground.size = Vector2(680, 50)
+\tstage.add_child(ground)
+\tbattle_asma = Label.new()
+\tbattle_asma.text = "⚔\
+ASMA"
+\tbattle_asma.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+\tbattle_asma.add_theme_font_size_override("font_size", 28)
+\tbattle_asma.add_theme_color_override("font_color", Color("#9bd9ff"))
+\tbattle_asma.position = Vector2(90, 75)
+\tbattle_asma.size = Vector2(110, 90)
+\tstage.add_child(battle_asma)
+\tbattle_demon = Label.new()
+\tbattle_demon.text = "👹\
+ASHFANG"
+\tbattle_demon.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+\tbattle_demon.add_theme_font_size_override("font_size", 28)
+\tbattle_demon.add_theme_color_override("font_color", Color("#ff9b83"))
+\tbattle_demon.position = Vector2(480, 75)
+\tbattle_demon.size = Vector2(130, 90)
+\tstage.add_child(battle_demon)
+\tbattle_dialogue = Label.new()
+\tbattle_dialogue.text = "Ashfang: You do not belong in this forest!"
+\tbattle_dialogue.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+\tbattle_dialogue.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+\tbattle_dialogue.add_theme_color_override("font_color", Color("#e8d8b4"))
+\tcol.add_child(battle_dialogue)
+\tvar actions := HBoxContainer.new()
+\tactions.add_theme_constant_override("separation", 8)
+\tcol.add_child(actions)
+\tvar attack := Button.new()
+\tattack.text = "Move & Attack"
+\tattack.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+\tattack.pressed.connect(_battle_demo_attack)
+\tactions.add_child(attack)
+\tvar talk := Button.new()
+\ttalk.text = "Talk"
+\ttalk.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+\ttalk.pressed.connect(_battle_demo_talk)
+\tactions.add_child(talk)
+\tvar close := Button.new()
+\tclose.text = "Leave Battle"
+\tclose.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+\tclose.pressed.connect(_close_battle_demo)
+\tactions.add_child(close)
+\tvar note := Label.new()
+\tnote.text = "Prototype animation uses temporary character symbols; it does not replace your original art."
+\tnote.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+\tnote.add_theme_font_size_override("font_size", 11)
+\tnote.add_theme_color_override("font_color", Color("#a9c6d4"))
+\tcol.add_child(note)
+
+func _battle_demo_attack() -> void:
+\tif battle_overlay == null or not is_instance_valid(battle_overlay):
+\t\treturn
+\tvar start := battle_asma.position
+\tvar lunge := start + Vector2(260, 0)
+\tvar tween := create_tween()
+\ttween.tween_property(battle_asma, "position", lunge, 0.22).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+\ttween.tween_property(battle_demon, "position", battle_demon.position + Vector2(24, 0), 0.12)
+\ttween.tween_property(battle_asma, "position", start, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+\tbattle_enemy_hp = maxi(0, battle_enemy_hp - 25)
+\tif battle_enemy_hp == 0:
+\t\tbattle_dialogue.text = "Ashfang: No... the forest is yours! Demo battle won."
+\telse:
+\t\tbattle_dialogue.text = "Asma: Take this! Ashfang HP: %d%%" % battle_enemy_hp
+\t\tvar enemy_start := battle_demon.position
+\t\tvar enemy_tween := create_tween()
+\t\tenemy_tween.tween_property(battle_demon, "position", enemy_start + Vector2(-45, 0), 0.18)
+\t\tenemy_tween.tween_property(battle_demon, "position", enemy_start, 0.18)
+
+func _battle_demo_talk() -> void:
+\tif battle_overlay == null or not is_instance_valid(battle_overlay):
+\t\treturn
+\tvar lines := ["Asma: Tell me why you guard this forest.", "Ashfang: The old sigil must not leave these woods.", "Asma: Then I will take it and end this threat."]
+\tbattle_dialogue.text = lines[battle_turn % lines.size()]
+\tbattle_turn += 1
+
+func _close_battle_demo() -> void:
+\tif battle_overlay != null and is_instance_valid(battle_overlay):
+\t\tbattle_overlay.queue_free()
+\tbattle_overlay = null
