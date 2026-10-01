@@ -13,9 +13,13 @@ An original anime-inspired fantasy RPG prototype inside the TimeLoopDetectiveAsm
 - Human, moon elf, beastkin and demon lore
 - Original Queen Elyndra, King Rowan and Lord Varkesh
 - Village NPCs including healer, blacksmith and merchant
-- XP, level progression, HP, mana, gold and automatic saving
+- Level progression capped at level 100, with XP, level-up healing, skill points, HP, mana, gold and automatic saving
 - Ember, Frost, Gale, Mend and Shadow magic
-- Battle encounter, quest chapters, elf recruitment and horse mount
+- Battle encounters, quest chapters, elf recruitment and horse mount
+- Crystal Dungeon unlocked at level 5, with a guardian boss and rewards
+- Herb gathering, healing-potion crafting and potion use
+- Daily rewards (one claim per system date)
+- Achievement milestones for leveling, quests and dungeon victories
 - Touch-friendly controls
 
 ## Status
