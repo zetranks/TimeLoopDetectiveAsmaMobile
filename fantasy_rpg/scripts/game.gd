@@ -436,7 +436,7 @@ func _demon_lord() -> void:
 		gold += 1500
 		_gain_xp(5000)
 		bosses_defeated += 1
-		_say("NaN")
+		_say("You defeat level %d Demon Lord Varkesh! +1500 gold and +5000 XP." % DEMON_LORD_LEVEL)
 
 func _tournament() -> void:
 	if level < 5:
