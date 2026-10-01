@@ -10,6 +10,13 @@ var potions := 0
 var dungeon_clears := 0
 var bosses_defeated := 0
 var daily_claim_date := ""
+var village_level := 1
+var horse_type := "Royal Moonsteed"
+var horse_level := 1
+var team_name := ""
+var team_members := ["Asma"]
+var chat_history := ["System: Online chat is a local demo; server connection is not configured."]
+var chat_input: LineEdit
 var xp := 0
 var gold := 50
 var mana := 40
@@ -98,6 +105,21 @@ func _build_ui() -> void:
 	_add_button(root, "Use a healing potion", _use_potion)
 	_add_button(root, "Claim daily reward", _daily_reward)
 	_add_button(root, "View achievements", _achievements)
+	_add_section(root, "ONLINE SOCIAL (LOCAL DEMO)")
+	_add_button(root, "Create / join an adventure team", _create_team)
+	_add_button(root, "Invite demo teammate", _invite_team)
+	chat_input = LineEdit.new()
+	chat_input.placeholder_text = "Type a message..."
+	root.add_child(chat_input)
+	_add_button(root, "Send chat message", _send_chat)
+	_add_button(root, "View team chat", _show_chat)
+	_add_section(root, "VILLAGE & MOUNTS")
+	_add_button(root, "Upgrade Hearthvale village • 100 gold", _upgrade_village)
+	_add_button(root, "Choose / level up horse", _cycle_horse)
+	_add_section(root, "DEMON THREATS & TOURNAMENTS")
+	_add_button(root, "Fight a weak demon • Level 1+", _weak_demon)
+	_add_button(root, "Challenge Demon Lord Varkesh • Level 30+", _demon_lord)
+	_add_button(root, "Enter the arena tournament", _tournament)
 
 	_add_section(root, "ARCANE ARTS")
 	var spell_row := HBoxContainer.new()
@@ -323,8 +345,99 @@ func _achievements() -> void:
 	else:
 		_say("Achievements unlocked: " + ", ".join(unlocked))
 
+func _create_team() -> void:
+	if team_name == "":
+		team_name = "Aetheria Adventurers"
+		team_members = ["Asma"]
+		_say("Team created: %s. Invite friends when online services are connected." % team_name)
+	else:
+		_say("You are already in team %s." % team_name)
+
+func _invite_team() -> void:
+	if team_name == "":
+		_create_team()
+	team_members.append("Guest %d" % team_members.size())
+	_say("A demo teammate joined %s. This is local only, not a real online invite." % team_name)
+
+func _send_chat() -> void:
+	if chat_input == null or chat_input.text.strip_edges().is_empty():
+		_say("Enter a message before sending.")
+		return
+	chat_history.append("Asma: " + chat_input.text.strip_edges())
+	chat_input.clear()
+	_say("Message added to local demo chat. Online delivery needs a server.")
+
+func _show_chat() -> void:
+	_say("Team chat: " + " | ".join(chat_history.slice(maxi(0, chat_history.size() - 4), chat_history.size())))
+
+func _upgrade_village() -> void:
+	if village_level >= 10:
+		_say("Hearthvale has reached the current village level cap (10).")
+	elif gold < 100:
+		_say("You need 100 gold to upgrade Hearthvale.")
+	else:
+		gold -= 100
+		village_level += 1
+		_gain_xp(20)
+		_say("Hearthvale upgraded to village level %d. +20 XP." % village_level)
+
+func _cycle_horse() -> void:
+	var horses := ["Royal Moonsteed", "Dune Runner", "Frostmane", "Emberhoof", "Stormwing"]
+	var index := horses.find(horse_type)
+	if index < 0:
+		index = 0
+	if not mounted:
+		horse_type = horses[(index + 1) % horses.size()]
+		mounted = true
+		horse_level = maxi(1, level / 10)
+		_say("You summon a %s at mount level %d." % [horse_type, horse_level])
+	elif horse_level < mini(20, maxi(1, level / 2)):
+		horse_level += 1
+		_say("%s reaches mount level %d." % [horse_type, horse_level])
+	else:
+		horse_type = horses[(index + 1) % horses.size()]
+		horse_level = 1
+		_say("You switch to %s, level 1." % horse_type)
+
+func _weak_demon() -> void:
+	var demon_level := randi_range(1, 5)
+	var damage := 8 + demon_level * 2
+	hp -= maxi(1, damage - level)
+	if hp <= 0:
+		hp = 50
+		gold = maxi(0, gold - 5)
+		_say("A weak demon defeats you. The shrine revives you; you lose 5 gold.")
+	else:
+		gold += 8 + demon_level
+		_gain_xp(20 + demon_level * 5)
+		_say("You defeat a level %d weak demon. +%d gold and XP." % [demon_level, 8 + demon_level])
+
+func _demon_lord() -> void:
+	if level < 30:
+		_say("Demon Lord Varkesh is a major threat. Reach level 30 before challenging him.")
+		return
+	var damage := 45
+	hp -= maxi(10, damage - level)
+	if hp <= 0:
+		hp = 50
+		gold = maxi(0, gold - 25)
+		_say("Varkesh overwhelms you. The shrine revives you; you lose 25 gold.")
+	else:
+		gold += 150
+		_gain_xp(250)
+		bosses_defeated += 1
+		_say("You defeat Demon Lord Varkesh! +150 gold and +250 XP.")
+
+func _tournament() -> void:
+	if level < 5:
+		_say("The village tournament opens at level 5.")
+		return
+	gold += 25 + level
+	_gain_xp(45)
+	_say("You complete an arena tournament round. +%d gold and +45 XP." % (25 + level))
+
 func _save_game() -> void:
-	var data := {"level": level, "xp": xp, "gold": gold, "mana": mana, "hp": hp, "chapter": chapter, "quest_done": quest_done, "mounted": mounted, "companions": companions, "log_lines": log_lines, "skill_points": skill_points, "herbs": herbs, "potions": potions, "dungeon_clears": dungeon_clears, "bosses_defeated": bosses_defeated, "daily_claim_date": daily_claim_date}
+	var data := {"level": level, "xp": xp, "gold": gold, "mana": mana, "hp": hp, "chapter": chapter, "quest_done": quest_done, "mounted": mounted, "companions": companions, "log_lines": log_lines, "skill_points": skill_points, "herbs": herbs, "potions": potions, "dungeon_clears": dungeon_clears, "bosses_defeated": bosses_defeated, "daily_claim_date": daily_claim_date, "village_level": village_level, "horse_type": horse_type, "horse_level": horse_level, "team_name": team_name, "team_members": team_members, "chat_history": chat_history}
 	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if file:
 		file.store_string(JSON.stringify(data))
@@ -354,6 +467,12 @@ func _load_game() -> void:
 	dungeon_clears = int(data.get("dungeon_clears", 0))
 	bosses_defeated = int(data.get("bosses_defeated", 0))
 	daily_claim_date = str(data.get("daily_claim_date", ""))
+	village_level = clampi(int(data.get("village_level", 1)), 1, 10)
+	horse_type = str(data.get("horse_type", "Royal Moonsteed"))
+	horse_level = clampi(int(data.get("horse_level", 1)), 1, 20)
+	team_name = str(data.get("team_name", ""))
+	team_members = data.get("team_members", ["Asma"])
+	chat_history = data.get("chat_history", ["System: Local demo chat."])
 
 func _reset_game() -> void:
 	level = 1
@@ -363,6 +482,12 @@ func _reset_game() -> void:
 	dungeon_clears = 0
 	bosses_defeated = 0
 	daily_claim_date = ""
+	village_level = 1
+	horse_type = "Royal Moonsteed"
+	horse_level = 1
+	team_name = ""
+	team_members = ["Asma"]
+	chat_history = ["System: Online chat is a local demo; server connection is not configured."]
 	xp = 0
 	gold = 50
 	mana = 40
