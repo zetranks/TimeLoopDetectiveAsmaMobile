@@ -1,19 +1,22 @@
-# Reborn: Realms of Eternity
+# Aetheria: Reborn
 
-An original fantasy RPG prototype, built as a separate Godot project inside the TimeLoopDetectiveAsmaMobile repository. It draws on broad reincarnation-fantasy and kingdom-building themes while using original names, story, characters, and mechanics.
+An original anime-inspired fantasy RPG prototype inside the TimeLoopDetectiveAsmaMobile repository. It uses broad reincarnation-fantasy, monster-adventure and kingdom-building themes, with original characters, setting, names and story.
 
 ## Run
 1. Install Godot 4.x.
-2. Import the `fantasy_rpg/project.godot` project.
-3. Press **F6** or **F5** to play.
+2. Import `fantasy_rpg/project.godot`.
+3. Press F6 or F5 to play.
 
-## Prototype features
-- Chapter-based quest progression and exploration
-- XP, levels, health, mana, gold and save/load
+## Current features
+- Anime-fantasy inspired dark blue and gold interface
+- Asma, the original timewalker protagonist
+- Human, moon elf, beastkin and demon lore
+- Original Queen Elyndra, King Rowan and Lord Varkesh
+- Village NPCs including healer, blacksmith and merchant
+- XP, level progression, HP, mana, gold and automatic saving
 - Ember, Frost, Gale, Mend and Shadow magic
-- Battle encounters
-- Recruitable elf companion and royal horse
-- Kingdom council reward loop
-- Touch-friendly UI layout for mobile adaptation
+- Battle encounter, quest chapters, elf recruitment and horse mount
+- Touch-friendly controls
 
-This is a playable systems prototype. It currently uses a UI-driven adventure loop rather than animated 3D exploration. Art, audio, expanded quests, combat balancing and Android export configuration are future development tasks.
+## Status
+Playable UI-driven prototype. It does not copy characters, names, art or story from any existing anime. Animated exploration, character illustrations, deeper combat, expanded chapters, audio and Android release configuration are still planned.
