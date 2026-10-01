@@ -2,7 +2,14 @@ extends Control
 
 const SAVE_PATH := "user://realms_save.json"
 const SPELLS := {"Ember": 10, "Frost": 10, "Gale": 8, "Mend": 12, "Shadow": 15}
+const MAX_LEVEL := 100
 var level := 1
+var skill_points := 0
+var herbs := 0
+var potions := 0
+var dungeon_clears := 0
+var bosses_defeated := 0
+var daily_claim_date := ""
 var xp := 0
 var gold := 50
 var mana := 40
@@ -85,6 +92,12 @@ func _build_ui() -> void:
 	root.add_child(quest_label)
 	_add_button(root, "Explore the Whispering Forest", _explore)
 	_add_button(root, "Battle the Ashfang Marauder", _battle)
+	_add_button(root, "Enter the Crystal Dungeon (Level 5+)", _dungeon)
+	_add_button(root, "Gather herbs", _gather_herbs)
+	_add_button(root, "Craft a healing potion • 3 herbs", _craft_potion)
+	_add_button(root, "Use a healing potion", _use_potion)
+	_add_button(root, "Claim daily reward", _daily_reward)
+	_add_button(root, "View achievements", _achievements)
 
 	_add_section(root, "ARCANE ARTS")
 	var spell_row := HBoxContainer.new()
@@ -149,7 +162,7 @@ func _add_button(parent: VBoxContainer, text: String, action: Callable) -> void:
 func _refresh() -> void:
 	if status_label == null:
 		return
-	status_label.text = "Level %d   •   HP %d/100   •   Mana %d/100   •   Gold %d\nMount: %s   •   Party: %s" % [level, hp, mana, gold, "Moonsteed" if mounted else "None", ", ".join(companions)]
+	status_label.text = "Level %d/%d   •   XP %d/%d   •   Skill points %d\nHP %d/100   •   Mana %d/100   •   Gold %d\nHerbs %d   •   Potions %d   •   Mount: %s\nParty: %s" % [level, MAX_LEVEL, xp, level * 100, skill_points, hp, mana, gold, herbs, potions, "Moonsteed" if mounted else "None", ", ".join(companions)]
 	xp_bar.max_value = level * 100
 	xp_bar.value = xp
 	quest_label.text = "Chapter %d • %s" % [chapter, "The sigil is recovered. The Moon Court awaits." if quest_done else "Recover the lost sigil from the Whispering Forest."]
@@ -163,12 +176,15 @@ func _say(message: String) -> void:
 
 func _gain_xp(amount: int) -> void:
 	xp += amount
-	while xp >= level * 100:
+	while xp >= level * 100 and level < MAX_LEVEL:
 		xp -= level * 100
 		level += 1
+		skill_points += 1
 		hp = 100
 		mana = mini(100, mana + 20)
-		log_lines.append("LEVEL UP! You reached level %d." % level)
+		log_lines.append("LEVEL UP! Level %d. +1 skill point; HP restored." % level)
+	if level == MAX_LEVEL:
+		xp = 0
 
 func _explore() -> void:
 	if quest_done:
@@ -179,6 +195,7 @@ func _explore() -> void:
 	quest_done = true
 	chapter = 2
 	gold += 25
+	herbs += 2
 	_gain_xp(60)
 	_say("You claim the lost sigil. Queen Elyndra summons you to the Moonlit Court. +25 gold, +60 XP.")
 
@@ -237,8 +254,77 @@ func _council() -> void:
 	mana = mini(100, mana + 20)
 	_say("The village council thanks you. +15 gold and +20 mana.")
 
+
+func _dungeon() -> void:
+	if level < 5:
+		_say("The Crystal Dungeon opens at level 5.")
+		return
+	var damage := 22 + level * 2
+	hp -= maxi(5, 28 - level)
+	if hp <= 0:
+		hp = 50
+		gold = maxi(0, gold - 15)
+		_say("The dungeon guardian defeats you. The shrine revives you; you lose 15 gold.")
+		return
+	dungeon_clears += 1
+	bosses_defeated += 1
+	gold += 35 + level
+	herbs += 2
+	_gain_xp(80 + level * 2)
+	_say("You defeat the Crystal Guardian for %d damage! +%d gold, herbs and XP." % [damage, 35 + level])
+
+func _gather_herbs() -> void:
+	herbs += 2
+	_gain_xp(5)
+	_say("You gather 2 moon herbs. +5 XP.")
+
+func _craft_potion() -> void:
+	if herbs < 3:
+		_say("You need 3 moon herbs to craft a healing potion.")
+		return
+	herbs -= 3
+	potions += 1
+	_say("You craft a healing potion. Potions: %d." % potions)
+
+func _use_potion() -> void:
+	if potions <= 0:
+		_say("You have no healing potions. Craft one with 3 herbs.")
+		return
+	if hp >= 100:
+		_say("Your health is already full.")
+		return
+	potions -= 1
+	hp = mini(100, hp + 50)
+	_say("The potion restores up to 50 HP.")
+
+func _daily_reward() -> void:
+	var today := Time.get_date_string_from_system()
+	if daily_claim_date == today:
+		_say("Today's daily reward has already been claimed. Come back tomorrow.")
+		return
+	daily_claim_date = today
+	gold += 50
+	herbs += 3
+	_gain_xp(25)
+	_say("Daily reward claimed: +50 gold, +3 herbs and +25 XP.")
+
+func _achievements() -> void:
+	var unlocked: Array[String] = []
+	if level >= 10:
+		unlocked.append("Rising Hero (Level 10)")
+	if dungeon_clears >= 1:
+		unlocked.append("Crystal Conqueror")
+	if bosses_defeated >= 5:
+		unlocked.append("Bane of Bosses")
+	if chapter >= 2:
+		unlocked.append("Sigil Seeker")
+	if unlocked.is_empty():
+		_say("Achievements: keep exploring, level up and defeat dungeon bosses.")
+	else:
+		_say("Achievements unlocked: " + ", ".join(unlocked))
+
 func _save_game() -> void:
-	var data := {"level": level, "xp": xp, "gold": gold, "mana": mana, "hp": hp, "chapter": chapter, "quest_done": quest_done, "mounted": mounted, "companions": companions, "log_lines": log_lines}
+	var data := {"level": level, "xp": xp, "gold": gold, "mana": mana, "hp": hp, "chapter": chapter, "quest_done": quest_done, "mounted": mounted, "companions": companions, "log_lines": log_lines, "skill_points": skill_points, "herbs": herbs, "potions": potions, "dungeon_clears": dungeon_clears, "bosses_defeated": bosses_defeated, "daily_claim_date": daily_claim_date}
 	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if file:
 		file.store_string(JSON.stringify(data))
@@ -252,7 +338,7 @@ func _load_game() -> void:
 	var data = JSON.parse_string(file.get_as_text())
 	if typeof(data) != TYPE_DICTIONARY:
 		return
-	level = int(data.get("level", 1))
+	level = clampi(int(data.get("level", 1)), 1, MAX_LEVEL)
 	xp = int(data.get("xp", 0))
 	gold = int(data.get("gold", 50))
 	mana = int(data.get("mana", 40))
@@ -262,9 +348,21 @@ func _load_game() -> void:
 	mounted = bool(data.get("mounted", false))
 	companions = data.get("companions", ["Asma, the Timewalker"])
 	log_lines = data.get("log_lines", log_lines)
+	skill_points = int(data.get("skill_points", 0))
+	herbs = int(data.get("herbs", 0))
+	potions = int(data.get("potions", 0))
+	dungeon_clears = int(data.get("dungeon_clears", 0))
+	bosses_defeated = int(data.get("bosses_defeated", 0))
+	daily_claim_date = str(data.get("daily_claim_date", ""))
 
 func _reset_game() -> void:
 	level = 1
+	skill_points = 0
+	herbs = 0
+	potions = 0
+	dungeon_clears = 0
+	bosses_defeated = 0
+	daily_claim_date = ""
 	xp = 0
 	gold = 50
 	mana = 40
