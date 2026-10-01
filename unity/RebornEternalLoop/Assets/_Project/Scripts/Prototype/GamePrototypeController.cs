@@ -15,6 +15,7 @@ namespace RebornEternalLoop
 
         private Transform player;
         private Transform enemy;
+        private CampaignProgress campaign;
         private int health, level = 1, xp, enemyHp, loops, coins;
         private float nextAttack, nextEnemyAttack;
         private Vector3 spawnPoint;
@@ -29,6 +30,8 @@ namespace RebornEternalLoop
         private void Start()
         {
             health = startingHealth;
+            campaign = GetComponent<CampaignProgress>();
+            if (campaign == null) campaign = gameObject.AddComponent<CampaignProgress>();
             spawnPoint = new Vector3(0f, 0.65f, 0f);
             var p = GameObject.Find("PlayerSlime");
             var e = GameObject.Find("LoopWraith");
@@ -69,6 +72,7 @@ namespace RebornEternalLoop
             if (enemyHp <= 0)
             {
                 xp += 25; coins += 5;
+                campaign.RegisterWraithDefeat();
                 enemy.position = new Vector3(Random.Range(-5f, 5f), 0.6f, Random.Range(3f, 8f));
                 enemyHp = enemyHealth + loops * 5;
                 notice = "Wraith defeated! +25 XP, +5 moon coins.";
@@ -117,11 +121,16 @@ namespace RebornEternalLoop
             float scale = Mathf.Clamp(Screen.width / 900f, 0.75f, 1.5f);
             GUI.matrix = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(scale, scale, 1));
             float w = Screen.width / scale, h = Screen.height / scale;
-            GUI.Box(new Rect(12, 12, 310, 142), "REBORN: ETERNAL LOOP");
+            GUI.Box(new Rect(12, 12, 360, 166), "REBORN: ETERNAL LOOP");
             GUI.Label(new Rect(25, 42, 285, 22), "Level " + level + "   XP " + xp + "/" + (level * 50));
             GUI.Label(new Rect(25, 65, 285, 22), "HP " + health + "/" + MaxHealth);
             GUI.Label(new Rect(25, 88, 285, 22), "Loops " + loops + "   Moon coins " + coins);
             GUI.Label(new Rect(25, 111, 285, 22), "Wraith HP " + Mathf.Max(0, enemyHp));
+            GUI.Label(new Rect(25, 134, 285, 22), "Chapter " + campaign.Chapter + "  Progress " + campaign.DefeatedWraiths + "/" + campaign.DefeatsRequired + "  Essence " + campaign.Essence);
+            if (campaign.DefeatedWraiths >= campaign.DefeatsRequired && GUI.Button(new Rect(w - 166, h - 215, 140, 52), "NEXT CHAPTER"))
+            {
+                if (campaign.AdvanceChapter()) notice = "Chapter " + campaign.Chapter + " unlocked!";
+            }
             GUI.Box(new Rect(12, h - 48, Mathf.Min(w - 24, 640), 36), notice);
 
             // On-screen controls work with mouse in the Editor and touch on Android.
