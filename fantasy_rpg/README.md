@@ -22,9 +22,11 @@ An original anime-inspired fantasy RPG prototype inside the TimeLoopDetectiveAsm
 - Achievement milestones for leveling, quests and dungeon victories
 - Local-demo team creation, invitations and chat UI (real online multiplayer needs a server)
 - Five mount types with mount levels
+- Level 1,000 destiny choice between Demon Lord and Horse Guardian; the choice is saved
+- Procedurally generated looping background music: dark for Demon Lord, bright for Horse Guardian, and an adventure theme before choosing
 - Hearthvale village upgrades through level 10
 - Weak demons scale with player progress; level 1,200 Demon Lord Varkesh unlocks at player level 1,000; arena tournaments
 - Touch-friendly controls
 
 ## Status
-Playable UI-driven prototype. It does not copy characters, names, art or story from any existing anime. Animated exploration, character illustrations, deeper combat, expanded chapters, audio and Android release configuration are still planned.
+Playable UI-driven prototype. It does not copy characters, names, art or story from any existing anime. Animated exploration, character illustrations, deeper combat, expanded chapters, a recorded soundtrack and Android release configuration are still planned. Current background themes are synthesized in-game.
