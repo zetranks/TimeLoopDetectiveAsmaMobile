@@ -2,7 +2,8 @@ extends Control
 
 const SAVE_PATH := "user://realms_save.json"
 const SPELLS := {"Ember": 10, "Frost": 10, "Gale": 8, "Mend": 12, "Shadow": 15}
-const MAX_LEVEL := 100
+const MAX_LEVEL := 1500
+const DEMON_LORD_LEVEL := 1200
 var level := 1
 var skill_points := 0
 var herbs := 0
@@ -184,8 +185,8 @@ func _add_button(parent: VBoxContainer, text: String, action: Callable) -> void:
 func _refresh() -> void:
 	if status_label == null:
 		return
-	status_label.text = "Level %d/%d   •   XP %d/%d   •   Skill points %d\nHP %d/100   •   Mana %d/100   •   Gold %d\nHerbs %d   •   Potions %d   •   Mount: %s\nParty: %s" % [level, MAX_LEVEL, xp, level * 100, skill_points, hp, mana, gold, herbs, potions, "Moonsteed" if mounted else "None", ", ".join(companions)]
-	xp_bar.max_value = level * 100
+	status_label.text = "Level %d/%d   •   XP %d/%d   •   Skill points %d\nHP %d/100   •   Mana %d/100   •   Gold %d\nHerbs %d   •   Potions %d   •   Mount: %s\nParty: %s" % [level, MAX_LEVEL, xp, _xp_required(), skill_points, hp, mana, gold, herbs, potions, "Moonsteed" if mounted else "None", ", ".join(companions)]
+	xp_bar.max_value = _xp_required()
 	xp_bar.value = xp
 	quest_label.text = "Chapter %d • %s" % [chapter, "The sigil is recovered. The Moon Court awaits." if quest_done else "Recover the lost sigil from the Whispering Forest."]
 	spell_button.text = "Cast %s • %d mana" % [selected_magic, SPELLS[selected_magic]]
@@ -196,10 +197,13 @@ func _say(message: String) -> void:
 	_refresh()
 	_save_game()
 
+func _xp_required() -> int:
+	return 100 + level * 10
+
 func _gain_xp(amount: int) -> void:
 	xp += amount
-	while xp >= level * 100 and level < MAX_LEVEL:
-		xp -= level * 100
+	while xp >= _xp_required() and level < MAX_LEVEL:
+		xp -= _xp_required()
 		level += 1
 		skill_points += 1
 		hp = 100
@@ -222,8 +226,9 @@ func _explore() -> void:
 	_say("You claim the lost sigil. Queen Elyndra summons you to the Moonlit Court. +25 gold, +60 XP.")
 
 func _battle() -> void:
+	var enemy_level := maxi(1, level + 2)
 	var damage := 12 + level * 3
-	hp -= maxi(1, 18 - level * 2)
+	hp -= maxi(1, 18 + enemy_level / 20 - level / 10)
 	gold += 12
 	_gain_xp(35)
 	if hp <= 0:
@@ -292,7 +297,7 @@ func _dungeon() -> void:
 	bosses_defeated += 1
 	gold += 35 + level
 	herbs += 2
-	_gain_xp(80 + level * 2)
+	_gain_xp(80 + level * 10)
 	_say("You defeat the Crystal Guardian for %d damage! +%d gold, herbs and XP." % [damage, 35 + level])
 
 func _gather_herbs() -> void:
@@ -400,8 +405,8 @@ func _cycle_horse() -> void:
 		_say("You switch to %s, level 1." % horse_type)
 
 func _weak_demon() -> void:
-	var demon_level := randi_range(1, 5)
-	var damage := 8 + demon_level * 2
+	var demon_level := maxi(1, int(level * 0.8) + randi_range(1, 5))
+	var damage := 8 + int(demon_level * 0.15)
 	hp -= maxi(1, damage - level)
 	if hp <= 0:
 		hp = 50
@@ -413,18 +418,23 @@ func _weak_demon() -> void:
 		_say("You defeat a level %d weak demon. +%d gold and XP." % [demon_level, 8 + demon_level])
 
 func _demon_lord() -> void:
-	if level < 30:
-		_say("Demon Lord Varkesh is a major threat. Reach level 30 before challenging him.")
+	if level < 1000:
+		_say("Demon Lord Varkesh is level %d. Reach level 1000 and prepare your gear before challenging him." % DEMON_LORD_LEVEL)
 		return
-	var damage := 45
-	hp -= maxi(10, damage - level)
+	var damage := DEMON_LORD_LEVEL * 2
+	var player_power := level * 2 + skill_points * 3 + horse_level * 10
+	if player_power < DEMON_LORD_LEVEL:
+		hp -= 100
+		_say("Varkesh overwhelms you. His level %d power exceeds yours (%d). Train and return." % [DEMON_LORD_LEVEL, player_power])
+		return
+	hp -= maxi(10, 45 - level / 20)
 	if hp <= 0:
 		hp = 50
 		gold = maxi(0, gold - 25)
 		_say("Varkesh overwhelms you. The shrine revives you; you lose 25 gold.")
 	else:
-		gold += 150
-		_gain_xp(250)
+		gold += 1500
+		_gain_xp(5000)
 		bosses_defeated += 1
 		_say("You defeat Demon Lord Varkesh! +150 gold and +250 XP.")
 
