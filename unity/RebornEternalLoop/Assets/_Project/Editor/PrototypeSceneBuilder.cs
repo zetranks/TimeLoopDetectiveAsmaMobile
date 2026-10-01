@@ -34,6 +34,7 @@ namespace RebornEternalLoop.Editor
             enemy.transform.position = new Vector3(3f, 0.6f, 5f);
             enemy.transform.localScale = new Vector3(0.85f, 1.2f, 0.85f);
             enemy.GetComponent<Renderer>().sharedMaterial = Material(new Color(0.62f, 0.25f, 0.85f));
+            enemy.AddComponent<RebornEternalLoop.WraithEnemyAI>();
 
             var cameraObject = new GameObject("PrototypeCamera", typeof(Camera), typeof(AudioListener));
             var camera = cameraObject.GetComponent<Camera>();
