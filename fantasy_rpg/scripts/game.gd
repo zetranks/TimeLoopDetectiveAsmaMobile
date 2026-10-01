@@ -227,8 +227,10 @@ func _update_music() -> void:
 		return
 	if destiny_choice == "Demon Lord":
 		bgm_player.stream = _make_theme([110.0, 130.81, 146.83, 98.0, 110.0, 164.81, 146.83, 98.0], true)
-	else:
+	elif destiny_choice == "Horse Guardian":
 		bgm_player.stream = _make_theme([261.63, 329.63, 392.0, 329.63, 293.66, 369.99, 440.0, 369.99], false)
+	else:
+		bgm_player.stream = _make_theme([196.0, 220.0, 261.63, 293.66, 261.63, 220.0, 196.0, 174.61], false)
 	bgm_player.play()
 
 func _make_theme(notes: Array, dark: bool) -> AudioStreamWAV:
@@ -575,3 +577,4 @@ func _reset_game() -> void:
 	log_lines = ["A new soul awakens in Aetheria."]
 	_save_game()
 	_refresh()
+	_update_music()
