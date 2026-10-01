@@ -128,6 +128,7 @@ func _build_ui() -> void:
 	_add_button(root, "Choose Horse Guardian destiny", _choose_horse_destiny)
 	_add_section(root, "DEMON THREATS & TOURNAMENTS")
 	_add_button(root, "Animated battle demo • Move, talk & fight", _open_battle_demo)
+	_add_button(root, "PLAYABLE ADVENTURE DEMO • Move & explore", _open_playable_demo)
 	_add_button(root, "Fight a weak demon • Level 1+", _weak_demon)
 	_add_button(root, "Challenge Demon Lord Varkesh • Level 30+", _demon_lord)
 	_add_button(root, "Enter the arena tournament", _tournament)
@@ -704,3 +705,227 @@ func _close_battle_demo() -> void:
 \tif battle_overlay != null and is_instance_valid(battle_overlay):
 \t\tbattle_overlay.queue_free()
 \tbattle_overlay = null
+
+
+# Playable top-down demo; all existing story, characters and progression remain intact.
+var playable_demo: Control
+var demo_stage: Control
+var demo_player: Label
+var demo_npc: Label
+var demo_enemy: Label
+var demo_message: Label
+var demo_enemy_hp := 100
+
+func _open_playable_demo() -> void:
+	if playable_demo != null and is_instance_valid(playable_demo):
+		playable_demo.queue_free()
+	playable_demo = Control.new()
+	playable_demo.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	playable_demo.z_index = 30
+	add_child(playable_demo)
+	var shade := ColorRect.new()
+	shade.color = Color(0.025, 0.035, 0.07, 0.98)
+	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	playable_demo.add_child(shade)
+	var panel := PanelContainer.new()
+	panel.set_anchors_preset(Control.PRESET_CENTER)
+	panel.position = Vector2(-360, -310)
+	panel.size = Vector2(720, 620)
+	_style_panel(panel, Color("#17283b"))
+	playable_demo.add_child(panel)
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 8)
+	panel.add_child(col)
+	var heading := Label.new()
+	heading.text = "AETHERIA • PLAYABLE ADVENTURE"
+	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	heading.add_theme_font_size_override("font_size", 21)
+	heading.add_theme_color_override("font_color", Color("#f1d58b"))
+	col.add_child(heading)
+	var help := Label.new()
+	help.text = "Move with WASD / arrow keys or the direction buttons. Walk near characters to interact."
+	help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	help.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	help.add_theme_font_size_override("font_size", 12)
+	col.add_child(help)
+	demo_stage = Control.new()
+	demo_stage.custom_minimum_size = Vector2(680, 280)
+	demo_stage.clip_contents = true
+	col.add_child(demo_stage)
+	var sky := ColorRect.new()
+	sky.color = Color("#24394b")
+	sky.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	demo_stage.add_child(sky)
+	var ground := ColorRect.new()
+	ground.color = Color("#29483d")
+	ground.position = Vector2(0, 205)
+	ground.size = Vector2(680, 75)
+	demo_stage.add_child(ground)
+	for i in range(8):
+		var tree := Label.new()
+		tree.text = "♣"
+		tree.add_theme_font_size_override("font_size", 35)
+		tree.add_theme_color_override("font_color", Color("#56805a"))
+		tree.position = Vector2(20 + i * 88, 5 + (i % 2) * 18)
+		demo_stage.add_child(tree)
+	demo_npc = Label.new()
+	demo_npc.text = "♙\nMIRA"
+	demo_npc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	demo_npc.add_theme_font_size_override("font_size", 22)
+	demo_npc.add_theme_color_override("font_color", Color("#f1d58b"))
+	demo_npc.position = Vector2(300, 75)
+	demo_npc.size = Vector2(90, 85)
+	demo_stage.add_child(demo_npc)
+	demo_enemy = Label.new()
+	demo_enemy.text = "👹\nASHFANG"
+	demo_enemy.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	demo_enemy.add_theme_font_size_override("font_size", 22)
+	demo_enemy.add_theme_color_override("font_color", Color("#ff9b83"))
+	demo_enemy.position = Vector2(520, 160)
+	demo_enemy.size = Vector2(130, 85)
+	demo_stage.add_child(demo_enemy)
+	demo_player = Label.new()
+	demo_player.text = "⚔\nASMA"
+	demo_player.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	demo_player.add_theme_font_size_override("font_size", 22)
+	demo_player.add_theme_color_override("font_color", Color("#9bd9ff"))
+	demo_player.position = Vector2(65, 155)
+	demo_player.size = Vector2(90, 85)
+	demo_stage.add_child(demo_player)
+	demo_enemy_hp = 100
+	demo_message = Label.new()
+	demo_message.text = "Mira: Welcome, Timewalker. Explore the forest!"
+	demo_message.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	demo_message.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	col.add_child(demo_message)
+	var controls := GridContainer.new()
+	controls.columns = 3
+	controls.add_theme_constant_override("h_separation", 6)
+	controls.add_theme_constant_override("v_separation", 4)
+	col.add_child(controls)
+	_demo_button(controls, "↑", _move_demo.bind(Vector2(0, -35)))
+	_demo_button(controls, "Interact", _interact_demo)
+	_demo_button(controls, "Attack", _attack_demo)
+	_demo_button(controls, "←", _move_demo.bind(Vector2(-35, 0)))
+	_demo_button(controls, "↓", _move_demo.bind(Vector2(0, 35)))
+	_demo_button(controls, "→", _move_demo.bind(Vector2(35, 0)))
+	_demo_button(controls, "Cast " + selected_magic, _cast_demo_magic)
+	_demo_button(controls, "Collect herbs", _collect_demo)
+	_demo_button(controls, "Complete quest", _demo_quest)
+	var footer := HBoxContainer.new()
+	footer.add_theme_constant_override("separation", 8)
+	col.add_child(footer)
+	var save := Button.new()
+	save.text = "Save Adventure"
+	save.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	save.pressed.connect(_save_game)
+	footer.add_child(save)
+	var leave := Button.new()
+	leave.text = "Exit Demo"
+	leave.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	leave.pressed.connect(_close_playable_demo)
+	footer.add_child(leave)
+
+func _demo_button(parent: GridContainer, label_text: String, action: Callable) -> void:
+	var button := Button.new()
+	button.text = label_text
+	button.custom_minimum_size = Vector2(100, 38)
+	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	button.pressed.connect(action)
+	parent.add_child(button)
+
+func _move_demo(offset: Vector2) -> void:
+	if demo_player == null or not is_instance_valid(demo_player):
+		return
+	var destination := demo_player.position + offset
+	destination.x = clampf(destination.x, 0.0, 570.0)
+	destination.y = clampf(destination.y, 0.0, 190.0)
+	var tween := create_tween()
+	tween.tween_property(demo_player, "position", destination, 0.12)
+
+func _unhandled_input(event: InputEvent) -> void:
+	if playable_demo == null or not is_instance_valid(playable_demo):
+		return
+	if event is InputEventKey and event.pressed and not event.echo:
+		match event.keycode:
+			KEY_W, KEY_UP:
+				_move_demo(Vector2(0, -35))
+			KEY_S, KEY_DOWN:
+				_move_demo(Vector2(0, 35))
+			KEY_A, KEY_LEFT:
+				_move_demo(Vector2(-35, 0))
+			KEY_D, KEY_RIGHT:
+				_move_demo(Vector2(35, 0))
+
+func _interact_demo() -> void:
+	if demo_player == null or demo_npc == null:
+		return
+	if demo_player.position.distance_to(demo_npc.position) < 125.0:
+		demo_message.text = "Mira: The forest sigil is lost. Speak with the queen after finding it."
+	elif demo_player.position.distance_to(demo_enemy.position) < 145.0:
+		demo_message.text = "Ashfang: The sigil belongs to these woods. Prepare to fight!"
+	else:
+		demo_message.text = "Move closer to Mira or Ashfang to interact."
+
+func _attack_demo() -> void:
+	if demo_player == null or demo_enemy == null:
+		return
+	if demo_player.position.distance_to(demo_enemy.position) > 150.0:
+		demo_message.text = "Move closer to Ashfang before attacking."
+		return
+	if demo_enemy_hp <= 0:
+		demo_message.text = "Ashfang has already been defeated. Explore or complete the quest."
+		return
+	demo_enemy_hp = maxi(0, demo_enemy_hp - 25)
+	var start := demo_player.position
+	var tween := create_tween()
+	tween.tween_property(demo_player, "position", start + Vector2(24, 0), 0.12)
+	tween.tween_property(demo_player, "position", start, 0.16)
+	if demo_enemy_hp == 0:
+		demo_enemy.text = "✦\nDEFEATED"
+		gold += 12
+		_gain_xp(35)
+		demo_message.text = "Ashfang defeated! +12 gold, +35 XP."
+		_refresh()
+	else:
+		demo_message.text = "Asma strikes! Ashfang HP: %d%%" % demo_enemy_hp
+
+func _cast_demo_magic() -> void:
+	if selected_magic == "Mend":
+		_cast_magic()
+		if demo_message != null:
+			demo_message.text = "Mend restores health. HP: %d" % hp
+		return
+	var cost: int = SPELLS[selected_magic]
+	if mana < cost:
+		demo_message.text = "Not enough mana. Visit the village council."
+		return
+	if demo_player.position.distance_to(demo_enemy.position) > 170.0:
+		demo_message.text = "Move closer to Ashfang to cast offensive magic."
+		return
+	mana -= cost
+	demo_enemy_hp = maxi(0, demo_enemy_hp - 35)
+	if demo_enemy_hp == 0:
+		demo_enemy.text = "✦\nDEFEATED"
+		gold += 12
+		_gain_xp(35)
+		demo_message.text = "%s magic defeats Ashfang! +12 gold, +35 XP." % selected_magic
+	else:
+		demo_message.text = "%s magic hits! Ashfang HP: %d%%" % [selected_magic, demo_enemy_hp]
+	_refresh()
+
+func _collect_demo() -> void:
+	herbs += 1
+	_gain_xp(2)
+	demo_message.text = "You collected a moon herb. Herbs: %d." % herbs
+	_refresh()
+
+func _demo_quest() -> void:
+	_explore()
+	if demo_message != null:
+		demo_message.text = "Quest updated: " + ("The sigil is recovered. The Moon Court awaits." if quest_done else "Explore the Whispering Forest.")
+
+func _close_playable_demo() -> void:
+	if playable_demo != null and is_instance_valid(playable_demo):
+		playable_demo.queue_free()
+	playable_demo = null
