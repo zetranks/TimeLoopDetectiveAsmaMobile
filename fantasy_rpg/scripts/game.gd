@@ -14,6 +14,8 @@ var daily_claim_date := ""
 var village_level := 1
 var horse_type := "Royal Moonsteed"
 var horse_level := 1
+var destiny_choice := "Undecided"
+var bgm_player: AudioStreamPlayer
 var team_name := ""
 var team_members := ["Asma"]
 var chat_history := ["System: Online chat is a local demo; server connection is not configured."]
@@ -38,8 +40,12 @@ func _ready() -> void:
 	_load_game()
 	_build_ui()
 	_refresh()
+	_update_music()
 
 func _build_ui() -> void:
+	bgm_player = AudioStreamPlayer.new()
+	bgm_player.volume_db = -18.0
+	add_child(bgm_player)
 	var bg := ColorRect.new()
 	bg.color = Color("#101a27")
 	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -117,6 +123,9 @@ func _build_ui() -> void:
 	_add_section(root, "VILLAGE & MOUNTS")
 	_add_button(root, "Upgrade Hearthvale village • 100 gold", _upgrade_village)
 	_add_button(root, "Choose / level up horse", _cycle_horse)
+	_add_section(root, "CHOOSE YOUR DESTINY • LEVEL 1000+")
+	_add_button(root, "Choose Demon Lord destiny", _choose_demon_destiny)
+	_add_button(root, "Choose Horse Guardian destiny", _choose_horse_destiny)
 	_add_section(root, "DEMON THREATS & TOURNAMENTS")
 	_add_button(root, "Fight a weak demon • Level 1+", _weak_demon)
 	_add_button(root, "Challenge Demon Lord Varkesh • Level 30+", _demon_lord)
@@ -185,7 +194,7 @@ func _add_button(parent: VBoxContainer, text: String, action: Callable) -> void:
 func _refresh() -> void:
 	if status_label == null:
 		return
-	status_label.text = "Level %d/%d   •   XP %d/%d   •   Skill points %d\nHP %d/100   •   Mana %d/100   •   Gold %d\nHerbs %d   •   Potions %d   •   Mount: %s\nParty: %s" % [level, MAX_LEVEL, xp, _xp_required(), skill_points, hp, mana, gold, herbs, potions, "Moonsteed" if mounted else "None", ", ".join(companions)]
+	status_label.text = "Level %d/%d   •   XP %d/%d   •   Skill points %d\nHP %d/100   •   Mana %d/100   •   Gold %d\nHerbs %d   •   Potions %d   •   Mount: %s\nParty: %s\nDestiny: %s" % [level, MAX_LEVEL, xp, _xp_required(), skill_points, hp, mana, gold, herbs, potions, "Moonsteed" if mounted else "None", ", ".join(companions), destiny_choice]
 	xp_bar.max_value = _xp_required()
 	xp_bar.value = xp
 	quest_label.text = "Chapter %d • %s" % [chapter, "The sigil is recovered. The Moon Court awaits." if quest_done else "Recover the lost sigil from the Whispering Forest."]
@@ -196,6 +205,61 @@ func _say(message: String) -> void:
 	log_lines.append(message)
 	_refresh()
 	_save_game()
+
+func _choose_demon_destiny() -> void:
+	if level < 1000:
+		_say("Destiny choices unlock at level 1000. Keep training.")
+		return
+	destiny_choice = "Demon Lord"
+	_update_music()
+	_say("You choose the Demon Lord destiny. A dark, powerful theme now follows you.")
+
+func _choose_horse_destiny() -> void:
+	if level < 1000:
+		_say("Destiny choices unlock at level 1000. Keep training.")
+		return
+	destiny_choice = "Horse Guardian"
+	_update_music()
+	_say("You choose the Horse Guardian destiny. A bright, adventurous theme now follows you.")
+
+func _update_music() -> void:
+	if bgm_player == null:
+		return
+	if destiny_choice == "Demon Lord":
+		bgm_player.stream = _make_theme([110.0, 130.81, 146.83, 98.0, 110.0, 164.81, 146.83, 98.0], true)
+	else:
+		bgm_player.stream = _make_theme([261.63, 329.63, 392.0, 329.63, 293.66, 369.99, 440.0, 369.99], false)
+	bgm_player.play()
+
+func _make_theme(notes: Array, dark: bool) -> AudioStreamWAV:
+	# Procedural, loopable background music; no external audio files are required.
+	var sample_rate := 22050
+	var seconds_per_note := 0.5
+	var samples_per_note := int(sample_rate * seconds_per_note)
+	var total_samples := samples_per_note * notes.size()
+	var pcm := PackedByteArray()
+	pcm.resize(total_samples * 2)
+	for i in range(total_samples):
+		var note_index := int(i / samples_per_note)
+		var local_t := float(i % samples_per_note) / sample_rate
+		var frequency: float = notes[note_index]
+		var fade_in := minf(1.0, local_t * 12.0)
+		var fade_out := minf(1.0, (seconds_per_note - local_t) * 8.0)
+		var envelope := minf(fade_in, fade_out)
+		var fundamental := sin(TAU * frequency * local_t)
+		var overtone := sin(TAU * frequency * 2.0 * local_t) * (0.28 if dark else 0.16)
+		var undertone := sin(TAU * frequency * 0.5 * local_t) * (0.30 if dark else 0.12)
+		var sample_value := (fundamental + overtone + undertone) * envelope * (0.22 if dark else 0.18)
+		pcm.encode_s16(i * 2, int(clampf(sample_value, -1.0, 1.0) * 16000.0))
+	var stream := AudioStreamWAV.new()
+	stream.format = AudioStreamWAV.FORMAT_16_BITS
+	stream.mix_rate = sample_rate
+	stream.stereo = false
+	stream.data = pcm
+	stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
+	stream.loop_begin = 0
+	stream.loop_end = total_samples
+	return stream
 
 func _xp_required() -> int:
 	return 100 + level * 10
@@ -447,7 +511,7 @@ func _tournament() -> void:
 	_say("You complete an arena tournament round. +%d gold and +45 XP." % (25 + level))
 
 func _save_game() -> void:
-	var data := {"level": level, "xp": xp, "gold": gold, "mana": mana, "hp": hp, "chapter": chapter, "quest_done": quest_done, "mounted": mounted, "companions": companions, "log_lines": log_lines, "skill_points": skill_points, "herbs": herbs, "potions": potions, "dungeon_clears": dungeon_clears, "bosses_defeated": bosses_defeated, "daily_claim_date": daily_claim_date, "village_level": village_level, "horse_type": horse_type, "horse_level": horse_level, "team_name": team_name, "team_members": team_members, "chat_history": chat_history}
+	var data := {"level": level, "xp": xp, "gold": gold, "mana": mana, "hp": hp, "chapter": chapter, "quest_done": quest_done, "mounted": mounted, "companions": companions, "log_lines": log_lines, "skill_points": skill_points, "herbs": herbs, "potions": potions, "dungeon_clears": dungeon_clears, "bosses_defeated": bosses_defeated, "daily_claim_date": daily_claim_date, "village_level": village_level, "horse_type": horse_type, "horse_level": horse_level, "destiny_choice": destiny_choice, "team_name": team_name, "team_members": team_members, "chat_history": chat_history}
 	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if file:
 		file.store_string(JSON.stringify(data))
@@ -480,6 +544,7 @@ func _load_game() -> void:
 	village_level = clampi(int(data.get("village_level", 1)), 1, 10)
 	horse_type = str(data.get("horse_type", "Royal Moonsteed"))
 	horse_level = clampi(int(data.get("horse_level", 1)), 1, 20)
+	destiny_choice = str(data.get("destiny_choice", "Undecided"))
 	team_name = str(data.get("team_name", ""))
 	team_members = data.get("team_members", ["Asma"])
 	chat_history = data.get("chat_history", ["System: Local demo chat."])
@@ -495,6 +560,7 @@ func _reset_game() -> void:
 	village_level = 1
 	horse_type = "Royal Moonsteed"
 	horse_level = 1
+	destiny_choice = "Undecided"
 	team_name = ""
 	team_members = ["Asma"]
 	chat_history = ["System: Online chat is a local demo; server connection is not configured."]
