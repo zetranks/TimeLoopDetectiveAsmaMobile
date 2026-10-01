@@ -19,7 +19,17 @@ jobs:
         run: godot --version
 
       - name: Import project
-        run: godot --headless --editor --path fantasy_rpg --quit
+        run: godot --headless --editor --path fantasy_rpg --quit 2>&1 | tee godot-import.log
 
       - name: Run project
-        run: godot --headless --path fantasy_rpg --quit-after 10
+        run: godot --headless --path fantasy_rpg --quit-after 10 2>&1 | tee godot-run.log
+
+      - name: Upload Godot logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: godot-test-logs
+          path: |
+            godot-import.log
+            godot-run.log
+          if-no-files-found: ignore
