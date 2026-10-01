@@ -20,6 +20,10 @@ An original anime-inspired fantasy RPG prototype inside the TimeLoopDetectiveAsm
 - Herb gathering, healing-potion crafting and potion use
 - Daily rewards (one claim per system date)
 - Achievement milestones for leveling, quests and dungeon victories
+- Local-demo team creation, invitations and chat UI (real online multiplayer needs a server)
+- Five mount types with mount levels
+- Hearthvale village upgrades through level 10
+- Weak demons (levels 1–5), a powerful Demon Lord encounter (level 30+), and arena tournaments
 - Touch-friendly controls
 
 ## Status
