@@ -13,7 +13,7 @@ An original anime-inspired fantasy RPG prototype inside the TimeLoopDetectiveAsm
 - Human, moon elf, beastkin and demon lore
 - Original Queen Elyndra, King Rowan and Lord Varkesh
 - Village NPCs including healer, blacksmith and merchant
-- Level progression capped at level 100, with XP, level-up healing, skill points, HP, mana, gold and automatic saving
+- Level progression capped at level 1,500, with XP requirements scaling by level, with XP, level-up healing, skill points, HP, mana, gold and automatic saving
 - Ember, Frost, Gale, Mend and Shadow magic
 - Battle encounters, quest chapters, elf recruitment and horse mount
 - Crystal Dungeon unlocked at level 5, with a guardian boss and rewards
@@ -23,7 +23,7 @@ An original anime-inspired fantasy RPG prototype inside the TimeLoopDetectiveAsm
 - Local-demo team creation, invitations and chat UI (real online multiplayer needs a server)
 - Five mount types with mount levels
 - Hearthvale village upgrades through level 10
-- Weak demons (levels 1–5), a powerful Demon Lord encounter (level 30+), and arena tournaments
+- Weak demons scale with player progress; level 1,200 Demon Lord Varkesh unlocks at player level 1,000; arena tournaments
 - Touch-friendly controls
 
 ## Status
