@@ -14,7 +14,7 @@ namespace RebornEternalLoop
         {
             public int chapter = 1;
             public int defeatedWraiths;
-            public int claimedChapter = 1;
+            public int claimedChapter = 0;
             public int essence;
         }
 
@@ -37,7 +37,7 @@ namespace RebornEternalLoop
             if (data == null) data = new SaveData();
             data.chapter = Mathf.Max(1, data.chapter);
             data.defeatedWraiths = Mathf.Max(0, data.defeatedWraiths);
-            data.claimedChapter = Mathf.Max(1, data.claimedChapter);
+            data.claimedChapter = Mathf.Max(0, data.claimedChapter);
             data.essence = Mathf.Max(0, data.essence);
         }
 
