@@ -16,6 +16,9 @@ namespace RebornEternalLoop
         private Transform player;
         private Transform enemy;
         private CampaignProgress campaign;
+        private RebornEternalLoop.Combat.AbilityBook abilityBook;
+        private bool guardActive;
+        private float guardUntil;
         private int health, level = 1, xp, enemyHp, loops, coins;
         private float nextAttack, nextEnemyAttack;
         private Vector3 spawnPoint;
@@ -30,6 +33,8 @@ namespace RebornEternalLoop
         private void Start()
         {
             health = startingHealth;
+            abilityBook = GetComponent<RebornEternalLoop.Combat.AbilityBook>();
+            if (abilityBook == null) abilityBook = gameObject.AddComponent<RebornEternalLoop.Combat.AbilityBook>();
             campaign = GetComponent<CampaignProgress>();
             if (campaign == null) campaign = gameObject.AddComponent<CampaignProgress>();
             spawnPoint = new Vector3(0f, 0.65f, 0f);
@@ -56,7 +61,7 @@ namespace RebornEternalLoop
             if (Vector3.Distance(player.position, enemy.position) < 1.7f && Time.time >= nextEnemyAttack)
             {
                 nextEnemyAttack = Time.time + 1.5f;
-                health = Mathf.Max(0, health - (5 + loops));
+                health = Mathf.Max(0, health - (guardActive && Time.time < guardUntil ? 1 : 5 + loops));
                 notice = "The Wraith hits you!";
             }
             if (health <= 0) Rewind();
@@ -69,24 +74,44 @@ namespace RebornEternalLoop
             { notice = "Move closer to the Wraith to attack."; return; }
             enemyHp -= attackBaseDamage + level * 2;
             notice = "Arcane strike!";
-            if (enemyHp <= 0)
-            {
-                xp += 25; coins += 5;
-                campaign.RegisterWraithDefeat();
-                enemy.position = new Vector3(Random.Range(-5f, 5f), 0.6f, Random.Range(3f, 8f));
-                enemyHp = enemyHealth + loops * 5;
-                notice = "Wraith defeated! +25 XP, +5 moon coins.";
-                while (xp >= level * 50)
-                {
-                    xp -= level * 50; level++;
-                    health = Mathf.Min(MaxHealth, health + 25);
-                    notice = "Evolution! You reached level " + level + ".";
-                }
-                Save();
-            }
+            if (enemyHp <= 0) ResolveDefeat();
         }
 
-        private int MaxHealth { get { return startingHealth + (level - 1) * 15; } }
+        private void ResolveDefeat()
+        {
+            xp += 25; coins += 5;
+            campaign.RegisterWraithDefeat();
+            enemy.position = new Vector3(Random.Range(-5f, 5f), 0.6f, Random.Range(3f, 8f));
+            enemyHp = enemyHealth + loops * 5;
+            notice = "Wraith defeated! +25 XP, +5 moon coins.";
+            while (xp >= level * 50)
+            {
+                xp -= level * 50; level++;
+                health = Mathf.Min(MaxHealth, health + 25);
+                notice = "Evolution! You reached level " + level + ".";
+            }
+            Save();
+        }
+
+        private void UseAbility(RebornEternalLoop.Combat.AbilityKind kind)
+        {
+            RebornEternalLoop.Combat.AbilityDefinition ability;
+            if (!abilityBook.TryUse(kind, out ability)) { notice = "Ability is cooling down."; return; }
+            if (kind == RebornEternalLoop.Combat.AbilityKind.VerdantGuard)
+            {
+                guardActive = true;
+                guardUntil = Time.time + 8f;
+                notice = "Verdant Guard reduces damage for 8 seconds.";
+                return;
+            }
+            if (enemy == null || Vector3.Distance(player.position, enemy.position) > attackRange + 1.5f)
+            { notice = "Move closer to use " + ability.displayName + "."; return; }
+            enemyHp -= ability.power + level;
+            notice = ability.displayName + " hits for " + (ability.power + level) + "!";
+            if (enemyHp <= 0) ResolveDefeat();
+        }
+
+        private int MaxHealth { { return startingHealth + (level - 1) * 15; } }
 
         private void Rewind()
         {
@@ -142,6 +167,9 @@ namespace RebornEternalLoop
             if (GUI.RepeatButton(new Rect(bx + s * 2, by + s, s, s), "▶")) mobileMove.x = 1;
             if (GUI.Button(new Rect(w - 166, h - 150, 140, 62), "ATTACK")) attackPressed = true;
             if (GUI.Button(new Rect(w - 166, h - 78, 140, 52), "REWIND")) rewindPressed = true;
+            if (GUI.Button(new Rect(w - 330, h - 150, 150, 42), "ARCANE BOLT")) UseAbility(RebornEternalLoop.Combat.AbilityKind.ArcaneBolt);
+            if (GUI.Button(new Rect(w - 330, h - 102, 150, 42), "SLIME BURST")) UseAbility(RebornEternalLoop.Combat.AbilityKind.SlimeBurst);
+            if (GUI.Button(new Rect(w - 330, h - 54, 150, 42), "VERDANT GUARD")) UseAbility(RebornEternalLoop.Combat.AbilityKind.VerdantGuard);
         }
     }
 }
