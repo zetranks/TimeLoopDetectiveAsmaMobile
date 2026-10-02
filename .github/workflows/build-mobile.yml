@@ -31,7 +31,7 @@ jobs:
         run: |
           echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > /tmp/aetheria-release.keystore
           sed -i "s|keystore/release=""|keystore/release=\"/tmp/aetheria-release.keystore\"|; s|keystore/release_user=""|keystore/release_user=\"$ANDROID_KEY_ALIAS\"|; s|keystore/release_password=""|keystore/release_password=\"$ANDROID_KEY_PASSWORD\"|" fantasy_rpg/export_presets.cfg
-          godot --headless --path fantasy_rpg --export-release "Android" build/aetheria-release.aab
+          godot --headless --path fantasy_rpg --export-release "Android AAB" build/aetheria-release.aab
       - uses: actions/upload-artifact@v4
         with:
           name: aetheria-android
