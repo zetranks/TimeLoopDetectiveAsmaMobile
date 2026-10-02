@@ -166,6 +166,7 @@ func _build_ui() -> void:
 	root.add_child(log_label)
 	_add_button(root, "Save Adventure", _save_game)
 	_add_button(root, "Start a New Adventure", _reset_game)
+	_add_button(root, "Game Credits", _show_credits)
 
 func _style_panel(panel: PanelContainer, color: Color) -> void:
 	var style := StyleBoxFlat.new()
@@ -929,3 +930,41 @@ func _close_playable_demo() -> void:
 	if playable_demo != null and is_instance_valid(playable_demo):
 		playable_demo.queue_free()
 	playable_demo = null
+
+
+func _show_credits() -> void:
+	var overlay := Control.new()
+	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.z_index = 40
+	add_child(overlay)
+	var shade := ColorRect.new()
+	shade.color = Color(0.025, 0.035, 0.07, 0.96)
+	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.add_child(shade)
+	var panel := PanelContainer.new()
+	panel.set_anchors_preset(Control.PRESET_CENTER)
+	panel.position = Vector2(-300, -190)
+	panel.size = Vector2(600, 380)
+	_style_panel(panel, Color("#17283b"))
+	overlay.add_child(panel)
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 12)
+	panel.add_child(col)
+	var heading := Label.new()
+	heading.text = "✦ AETHERIA: REBORN ✦"
+	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	heading.add_theme_font_size_override("font_size", 24)
+	heading.add_theme_color_override("font_color", Color("#f1d58b"))
+	col.add_child(heading)
+	var credits := Label.new()
+	credits.text = "A fantasy adventure featuring Asma, the Timewalker.\n\nGame & project: ZetaRank\nEngine: Godot Engine\n\nThank you for exploring Aetheria.\nYour journey is only beginning."
+	credits.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	credits.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	credits.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	credits.add_theme_color_override("font_color", Color("#d1dce7"))
+	col.add_child(credits)
+	var close := Button.new()
+	close.text = "Close Credits"
+	close.custom_minimum_size.y = 48
+	close.pressed.connect(overlay.queue_free)
+	col.add_child(close)
