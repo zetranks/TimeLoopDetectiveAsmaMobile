@@ -1,0 +1,39 @@
+name: Build Mobile Apps
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'fantasy_rpg/**'
+      - '.github/workflows/build-mobile.yml'
+
+jobs:
+  android:
+    name: Android APK and AAB
+    runs-on: ubuntu-latest
+    container:
+      image: barichello/godot-ci:4.4.1
+    steps:
+      - uses: actions/checkout@v4
+      - name: Import project
+        run: godot --headless --editor --path fantasy_rpg --quit
+      - name: Export debug APK
+        run: |
+          mkdir -p build
+          godot --headless --path fantasy_rpg --export-debug "Android" build/aetheria-debug.apk
+      - name: Export release AAB when signing secrets are configured
+        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' && secrets.ANDROID_KEYSTORE_PASSWORD != '' && secrets.ANDROID_KEY_ALIAS != '' && secrets.ANDROID_KEY_PASSWORD != '' }}
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > /tmp/aetheria-release.keystore
+          sed -i "s|keystore/release=""|keystore/release=\"/tmp/aetheria-release.keystore\"|; s|keystore/release_user=""|keystore/release_user=\"$ANDROID_KEY_ALIAS\"|; s|keystore/release_password=""|keystore/release_password=\"$ANDROID_KEY_PASSWORD\"|" fantasy_rpg/export_presets.cfg
+          godot --headless --path fantasy_rpg --export-release "Android" build/aetheria-release.aab
+      - uses: actions/upload-artifact@v4
+        with:
+          name: aetheria-android
+          path: build/*
+          if-no-files-found: error
